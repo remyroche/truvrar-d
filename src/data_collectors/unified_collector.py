@@ -22,6 +22,8 @@ import rasterio
 from rasterio.warp import transform
 
 from .base_collector import BaseCollector
+from .harmonization import DataHarmonizer
+from .caching import DataCache
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,8 @@ class UnifiedDataCollector(BaseCollector):
     WorldClim, GLiM, EBI Metagenomics) while maintaining all functionality.
     """
     
-    def __init__(self, config: Dict[str, Any], data_dir: Path):
+    def __init__(self, config: Dict[str, Any], data_dir: Path, 
+                 enable_caching: bool = True, enable_harmonization: bool = True):
         super().__init__(config, data_dir)
         self.data_sources = {
             'gbif': self._collect_gbif_data,
@@ -45,7 +48,21 @@ class UnifiedDataCollector(BaseCollector):
             'ebi_metagenomics': self._collect_ebi_metagenomics_data
         }
         
-    def collect(self, source: str, **kwargs) -> pd.DataFrame:
+        # Initialize caching and harmonization
+        self.enable_caching = enable_caching
+        self.enable_harmonization = enable_harmonization
+        
+        if enable_caching:
+            self.cache = DataCache(data_dir / "cache", ttl_hours=24)
+        else:
+            self.cache = None
+            
+        if enable_harmonization:
+            self.harmonizer = DataHarmonizer(config)
+        else:
+            self.harmonizer = None
+        
+    def collect(self, source: str, **kwargs) -> Union[pd.DataFrame, Dict[str, Any]]:
         """
         Collect data from specified source.
         
@@ -55,15 +72,35 @@ class UnifiedDataCollector(BaseCollector):
             **kwargs: Source-specific parameters
             
         Returns:
-            DataFrame with collected data
+            DataFrame with collected data (if harmonization disabled) or
+            Dictionary with harmonized data, metadata, and quality scores
         """
         if source not in self.data_sources:
             raise ValueError(f"Unknown data source: {source}. Available: {list(self.data_sources.keys())}")
-            
+        
+        # Check cache first
+        if self.cache:
+            cached_data = self.cache.get(source, kwargs)
+            if cached_data is not None:
+                logger.info(f"Using cached data for {source}")
+                if self.enable_harmonization:
+                    return self._harmonize_single_source(source, cached_data)
+                return cached_data
+        
         logger.info(f"Collecting data from {source}")
-        return self.data_sources[source](**kwargs)
+        data = self.data_sources[source](**kwargs)
+        
+        # Cache the data
+        if self.cache and not data.empty:
+            self.cache.put(source, kwargs, data)
+        
+        # Harmonize if enabled
+        if self.enable_harmonization:
+            return self._harmonize_single_source(source, data)
+        
+        return data
     
-    def collect_multiple(self, sources: List[str], **kwargs) -> Dict[str, pd.DataFrame]:
+    def collect_multiple(self, sources: List[str], **kwargs) -> Union[Dict[str, pd.DataFrame], Dict[str, Any]]:
         """
         Collect data from multiple sources.
         
@@ -72,7 +109,8 @@ class UnifiedDataCollector(BaseCollector):
             **kwargs: Parameters to pass to all sources
             
         Returns:
-            Dictionary mapping source names to DataFrames
+            Dictionary mapping source names to DataFrames (if harmonization disabled) or
+            Harmonized data with metadata and quality scores
         """
         results = {}
         for source in sources:
@@ -81,7 +119,40 @@ class UnifiedDataCollector(BaseCollector):
             except Exception as e:
                 logger.error(f"Error collecting from {source}: {e}")
                 results[source] = pd.DataFrame()
+        
+        # If harmonization is enabled, harmonize all collected data
+        if self.enable_harmonization and self.harmonizer:
+            # Extract DataFrames from harmonized results
+            data_dict = {}
+            for source, result in results.items():
+                if isinstance(result, dict) and 'records_df' in result:
+                    data_dict[source] = result['records_df']
+                elif isinstance(result, pd.DataFrame):
+                    data_dict[source] = result
+            
+            if data_dict:
+                return self.harmonizer.harmonize_data(data_dict)
+        
         return results
+    
+    def _harmonize_single_source(self, source: str, data: pd.DataFrame) -> Dict[str, Any]:
+        """Harmonize data from a single source."""
+        if not self.harmonizer or data.empty:
+            return {'records_df': data, 'metadata_df': pd.DataFrame(), 'summary_stats': {}}
+        
+        data_dict = {source: data}
+        return self.harmonizer.harmonize_data(data_dict)
+    
+    def get_cache_stats(self) -> Optional[Dict[str, Any]]:
+        """Get cache statistics if caching is enabled."""
+        if self.cache:
+            return self.cache.get_cache_stats()
+        return None
+    
+    def clear_cache(self, source: Optional[str] = None):
+        """Clear cache if caching is enabled."""
+        if self.cache:
+            self.cache.clear_cache(source)
     
     def _collect_gbif_data(self, species: List[str], limit: int = 10000, 
                           country: Optional[str] = None, year_from: Optional[int] = None,

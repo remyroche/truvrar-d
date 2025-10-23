@@ -19,37 +19,79 @@ class DataCollectorConfig:
             'base_url': 'https://api.gbif.org/v1',
             'timeout': 30,
             'max_retries': 3,
-            'rate_limit_delay': 0.1
+            'rate_limit_delay': 0.1,
+            'rate_limit_per_minute': 1000,
+            'license': 'CC0 1.0 Universal',
+            'attribution': 'GBIF.org (https://www.gbif.org)',
+            'data_license_url': 'https://creativecommons.org/publicdomain/zero/1.0/',
+            'api_version': 'v1',
+            'supports_uncertainty': True,
+            'supports_confidence': False
         },
         'inaturalist': {
             'base_url': 'https://api.inaturalist.org/v1',
             'timeout': 30,
             'max_retries': 3,
-            'rate_limit_delay': 0.1
+            'rate_limit_delay': 0.1,
+            'rate_limit_per_minute': 1000,
+            'license': 'CC BY-NC 4.0',
+            'attribution': 'iNaturalist (https://www.inaturalist.org)',
+            'data_license_url': 'https://creativecommons.org/licenses/by-nc/4.0/',
+            'api_version': 'v1',
+            'supports_uncertainty': False,
+            'supports_confidence': True
         },
         'soilgrids': {
             'base_url': 'https://rest.isric.org/soilgrids/v2.0',
             'timeout': 30,
             'max_retries': 3,
-            'rate_limit_delay': 0.1
+            'rate_limit_delay': 0.1,
+            'rate_limit_per_minute': 100,
+            'license': 'CC BY 4.0',
+            'attribution': 'ISRIC - World Soil Information',
+            'data_license_url': 'https://creativecommons.org/licenses/by/4.0/',
+            'api_version': 'v2.0',
+            'supports_uncertainty': True,
+            'supports_confidence': True
         },
         'worldclim': {
             'base_url': 'https://biogeo.ucdavis.edu/data/worldclim/v2.1',
             'timeout': 60,
             'max_retries': 3,
-            'rate_limit_delay': 0.5
+            'rate_limit_delay': 0.5,
+            'rate_limit_per_minute': 50,
+            'license': 'CC BY 4.0',
+            'attribution': 'WorldClim (https://www.worldclim.org)',
+            'data_license_url': 'https://creativecommons.org/licenses/by/4.0/',
+            'api_version': 'v2.1',
+            'supports_uncertainty': False,
+            'supports_confidence': False
         },
         'glim': {
             'base_url': 'https://www.geo.uni-hamburg.de/en/geologie/forschung/geodynamik/glim.html',
             'timeout': 30,
             'max_retries': 3,
-            'rate_limit_delay': 0.1
+            'rate_limit_delay': 0.1,
+            'rate_limit_per_minute': 100,
+            'license': 'CC BY 4.0',
+            'attribution': 'GLiM - Global Lithological Map',
+            'data_license_url': 'https://creativecommons.org/licenses/by/4.0/',
+            'api_version': '1.0',
+            'supports_uncertainty': False,
+            'supports_confidence': True
         },
         'ebi_metagenomics': {
             'base_url': 'https://www.ebi.ac.uk/metagenomics/api/latest',
             'timeout': 30,
             'max_retries': 3,
-            'rate_limit_delay': 0.5
+            'rate_limit_delay': 0.5,
+            'rate_limit_per_minute': 200,
+            'license': 'CC BY 4.0',
+            'attribution': 'EBI Metagenomics (https://www.ebi.ac.uk/metagenomics)',
+            'data_license_url': 'https://creativecommons.org/licenses/by/4.0/',
+            'api_version': 'latest',
+            'supports_uncertainty': False,
+            'supports_confidence': True
         }
     }
     
