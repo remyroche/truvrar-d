@@ -1,0 +1,80 @@
+# Basic truffle cultivation experiment simulation
+# This simulates a simple 24-hour experiment with T. melanosporum on Q. ilex
+
+# Simulation parameters
+total_time: 24.0  # hours
+dt: 0.1  # hours
+grid_size: [50, 50, 25]  # Smaller grid for faster simulation
+grid_spacing: 20.0  # μm
+initial_tips: 5
+initial_nutrient_concentration: 0.1  # mol/m³
+control_enabled: true
+control_interval: 2.0  # hours
+output_interval: 1.0  # hours
+output_dir: "output/basic_experiment"
+save_images: true
+save_data: true
+
+# Initial conditions
+initial_conditions:
+  ph: 6.2
+  ec: 1.2
+  do: 8.5
+  temperature: 22.0
+  humidity: 75.0
+  flow_rate: 0.5
+
+# Setpoints
+setpoints:
+  ph: 6.2
+  ec: 1.2
+  do: 8.5
+  temperature: 22.0
+  flow_rate: 0.5
+
+# Nutrient composition
+nutrients:
+  nitrate:
+    initial_concentration: 0.1  # mol/m³
+    diffusion_coefficient: 1.5e-9  # m²/s
+  phosphate:
+    initial_concentration: 0.01  # mol/m³
+    diffusion_coefficient: 0.7e-9  # m²/s
+  carbon:
+    initial_concentration: 0.05  # mol/m³
+    diffusion_coefficient: 1.0e-9  # m²/s
+  oxygen:
+    initial_concentration: 0.25  # mol/m³
+    diffusion_coefficient: 2.0e-9  # m²/s
+
+# Hyphal growth parameters
+hyphal_growth:
+  base_growth_rate: 1.0  # μm/h
+  branching_rate: 0.1  # per hour
+  anastomosis_distance: 20.0  # μm
+  chemotaxis_strength: 0.5
+  thigmotaxis_strength: 0.3
+  max_tips: 1000
+
+# Control parameters
+control:
+  prediction_horizon: 10
+  control_horizon: 5
+  sampling_time: 7200  # 2 hours in seconds
+  
+  # Constraints
+  ph_min: 5.8
+  ph_max: 6.8
+  ph_rate_max: 0.05  # pH units per minute
+  ec_min: 0.8
+  ec_max: 1.8
+  ec_rate_max: 0.1  # mS/cm per minute
+  do_min: 6.0  # mg/L
+  do_max: 12.0  # mg/L
+  do_rate_max: 0.5  # mg/L per minute
+  temp_min: 20.0  # °C
+  temp_max: 25.0  # °C
+  temp_rate_max: 1.0  # °C per minute
+  flow_min: 0.2  # L/min
+  flow_max: 1.0  # L/min
+  flow_rate_max: 0.2  # L/min per minute

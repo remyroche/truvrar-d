@@ -1,0 +1,246 @@
+@prefix : <http://truffle-cultivation.org/kg#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix qudt: <http://qudt.org/schema/qudt/> .
+@prefix chebi: <http://purl.obolibrary.org/obo/CHEBI_> .
+@prefix ncbi: <http://purl.obolibrary.org/obo/NCBITaxon_> .
+@prefix envo: <http://purl.obolibrary.org/obo/ENVO_> .
+@prefix po: <http://purl.obolibrary.org/obo/PO_> .
+
+# Core Classes
+:Fungus a owl:Class ;
+    rdfs:label "Fungus" ;
+    rdfs:comment "A fungal organism, including species, strain, genotype, and culture history" .
+
+:HostTree a owl:Class ;
+    rdfs:label "Host Tree" ;
+    rdfs:comment "A plant host for mycorrhizal association" .
+
+:Mycorrhiza a owl:Class ;
+    rdfs:label "Mycorrhiza" ;
+    rdfs:comment "An association instance linking a fungus to a host tree" .
+
+:NutrientRecipe a owl:Class ;
+    rdfs:label "Nutrient Recipe" ;
+    rdfs:comment "A composition of macro/micro elements, chelators, and carbon sources" .
+
+:Environment a owl:Class ;
+    rdfs:label "Environment" ;
+    rdfs:comment "Environmental conditions including pH, EC, DO, CO2, temperature, humidity, light, and flow" .
+
+:Protocol a owl:Class ;
+    rdfs:label "Protocol" ;
+    rdfs:comment "Experimental procedures for inoculation, sterilization, biofilm/scaffold, and hydro modules" .
+
+:Experiment a owl:Class ;
+    rdfs:label "Experiment" ;
+    rdfs:comment "An experimental design with replicates, sensors, and measurement schedule" .
+
+:Outcome a owl:Class ;
+    rdfs:label "Outcome" ;
+    rdfs:comment "Measured results including colonization %, hyphal density, primordia, and yield" .
+
+:Evidence a owl:Class ;
+    rdfs:label "Evidence" ;
+    rdfs:comment "Supporting evidence for outcomes with provenance information" .
+
+# Properties
+:formsMycorrhizaWith a owl:ObjectProperty ;
+    rdfs:domain :Fungus ;
+    rdfs:range :HostTree ;
+    rdfs:label "forms mycorrhiza with" .
+
+:observedUnder a owl:ObjectProperty ;
+    rdfs:domain :Mycorrhiza ;
+    rdfs:range :Environment ;
+    rdfs:label "observed under" .
+
+:hasNutrient a owl:ObjectProperty ;
+    rdfs:domain :NutrientRecipe ;
+    rdfs:range :Nutrient ;
+    rdfs:label "has nutrient" .
+
+:hasOutcome a owl:ObjectProperty ;
+    rdfs:domain :Experiment ;
+    rdfs:range :Outcome ;
+    rdfs:label "has outcome" .
+
+:hasProvenance a owl:ObjectProperty ;
+    rdfs:range prov:Entity, prov:Activity ;
+    rdfs:label "has provenance" .
+
+:supportedBy a owl:ObjectProperty ;
+    rdfs:domain :Outcome ;
+    rdfs:range :Evidence ;
+    rdfs:label "supported by" .
+
+:uses a owl:ObjectProperty ;
+    rdfs:domain :Experiment ;
+    rdfs:range :Protocol, :NutrientRecipe, :Environment ;
+    rdfs:label "uses" .
+
+# Data Properties
+:species a owl:DatatypeProperty ;
+    rdfs:domain :Fungus, :HostTree ;
+    rdfs:range xsd:string ;
+    rdfs:label "species" .
+
+:strain a owl:DatatypeProperty ;
+    rdfs:domain :Fungus ;
+    rdfs:range xsd:string ;
+    rdfs:label "strain" .
+
+:genotype a owl:DatatypeProperty ;
+    rdfs:domain :Fungus ;
+    rdfs:range xsd:string ;
+    rdfs:label "genotype" .
+
+:matingType a owl:DatatypeProperty ;
+    rdfs:domain :Fungus ;
+    rdfs:range xsd:string ;
+    rdfs:label "mating type" .
+
+:age a owl:DatatypeProperty ;
+    rdfs:domain :HostTree ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "age" .
+
+:rootstock a owl:DatatypeProperty ;
+    rdfs:domain :HostTree ;
+    rdfs:range xsd:string ;
+    rdfs:label "rootstock" .
+
+:pH a owl:DatatypeProperty ;
+    rdfs:domain :Environment ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "pH" .
+
+:electricalConductivity a owl:DatatypeProperty ;
+    rdfs:domain :Environment ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "electrical conductivity" .
+
+:dissolvedOxygen a owl:DatatypeProperty ;
+    rdfs:domain :Environment ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "dissolved oxygen" .
+
+:temperature a owl:DatatypeProperty ;
+    rdfs:domain :Environment ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "temperature" .
+
+:humidity a owl:DatatypeProperty ;
+    rdfs:domain :Environment ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "relative humidity" .
+
+:colonizationPercent a owl:DatatypeProperty ;
+    rdfs:domain :Outcome ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "colonization percent" .
+
+:hyphalDensity a owl:DatatypeProperty ;
+    rdfs:domain :Outcome ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "hyphal density" .
+
+:yield a owl:DatatypeProperty ;
+    rdfs:domain :Outcome ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "yield" .
+
+# Uncertainty and Quality
+:hasUncertainty a owl:ObjectProperty ;
+    rdfs:range :Uncertainty ;
+    rdfs:label "has uncertainty" .
+
+:Uncertainty a owl:Class ;
+    rdfs:label "Uncertainty" ;
+    rdfs:comment "Quantified uncertainty with mean, standard deviation, sample size, and confidence" .
+
+:mean a owl:DatatypeProperty ;
+    rdfs:domain :Uncertainty ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "mean" .
+
+:standardDeviation a owl:DatatypeProperty ;
+    rdfs:domain :Uncertainty ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "standard deviation" .
+
+:sampleSize a owl:DatatypeProperty ;
+    rdfs:domain :Uncertainty ;
+    rdfs:range xsd:integer ;
+    rdfs:label "sample size" .
+
+:confidence a owl:DatatypeProperty ;
+    rdfs:domain :Uncertainty ;
+    rdfs:range xsd:decimal ;
+    rdfs:label "confidence" .
+
+# Evidence Codes
+:EvidenceCode a owl:Class ;
+    rdfs:label "Evidence Code" ;
+    rdfs:comment "Type of evidence supporting an outcome" .
+
+:inVitro a :EvidenceCode ;
+    rdfs:label "in vitro" .
+
+:inPlanta a :EvidenceCode ;
+    rdfs:label "in planta" .
+
+:fieldTrial a :EvidenceCode ;
+    rdfs:label "field trial" .
+
+:hasEvidenceCode a owl:ObjectProperty ;
+    rdfs:domain :Evidence ;
+    rdfs:range :EvidenceCode ;
+    rdfs:label "has evidence code" .
+
+# Units
+:hasUnit a owl:ObjectProperty ;
+    rdfs:range qudt:Unit ;
+    rdfs:label "has unit" .
+
+# Examples
+:TuberMelanosporum a :Fungus ;
+    :species "Tuber melanosporum" ;
+    :strain "TME-001" ;
+    :genotype "MAT1-1" .
+
+:QuercusIlex a :HostTree ;
+    :species "Quercus ilex" ;
+    :age 2.5 ;
+    :rootstock "Q. ilex seedling" .
+
+:Mycorrhiza001 a :Mycorrhiza ;
+    :formsMycorrhizaWith :TuberMelanosporum ;
+    :withHost :QuercusIlex ;
+    :observedUnder :Environment001 .
+
+:Environment001 a :Environment ;
+    :pH 6.2 ;
+    :electricalConductivity 1.2 ;
+    :dissolvedOxygen 8.5 ;
+    :temperature 22.0 ;
+    :humidity 75.0 .
+
+:Outcome001 a :Outcome ;
+    :colonizationPercent 85.3 ;
+    :hyphalDensity 12.7 ;
+    :hasUncertainty :Uncertainty001 ;
+    :supportedBy :Evidence001 .
+
+:Uncertainty001 a :Uncertainty ;
+    :mean 85.3 ;
+    :standardDeviation 3.2 ;
+    :sampleSize 15 ;
+    :confidence 0.95 .
+
+:Evidence001 a :Evidence ;
+    :hasEvidenceCode :inPlanta ;
+    :hasProvenance :MicroscopyAnalysis001 .
