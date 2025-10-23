@@ -11,6 +11,12 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
+from ..utils.error_handling import (
+    handle_api_errors, handle_data_processing_errors, handle_file_operations,
+    ErrorHandler, validate_config, validate_dataframe, validate_coordinates,
+    retry_on_failure, DataCollectionError, APIError, ValidationError
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -18,8 +24,13 @@ class BaseCollector(ABC):
     """Base class for all data collectors."""
     
     def __init__(self, config: Dict[str, Any], data_dir: Path):
+        # Validate configuration
+        validate_config(config)
+        
         self.config = config
         self.data_dir = data_dir
+        self.error_handler = ErrorHandler()
+        
         self.session = requests.Session()
         self.session.headers.update({
             'User-Agent': 'GTHA/0.1.0 (https://github.com/gtha/truffle-atlas)'
@@ -28,26 +39,22 @@ class BaseCollector(ABC):
         # Ensure data directory exists
         self.data_dir.mkdir(parents=True, exist_ok=True)
         
+    @handle_api_errors
+    @retry_on_failure(max_retries=3, delay=1.0, exceptions=(requests.exceptions.RequestException,))
     def _make_request(self, url: str, params: Optional[Dict] = None, 
                      timeout: int = 30, max_retries: int = 3, 
                      rate_limit_delay: float = 0.1) -> requests.Response:
         """Make HTTP request with retry logic and rate limiting."""
-        for attempt in range(max_retries):
-            try:
-                response = self.session.get(url, params=params, timeout=timeout)
-                response.raise_for_status()
+        response = self.session.get(url, params=params, timeout=timeout)
+        response.raise_for_status()
+        
+        # Apply rate limiting
+        if rate_limit_delay > 0:
+            time.sleep(rate_limit_delay)
+            
+        return response
                 
-                # Apply rate limiting
-                if rate_limit_delay > 0:
-                    time.sleep(rate_limit_delay)
-                    
-                return response
-            except requests.exceptions.RequestException as e:
-                logger.warning(f"Request attempt {attempt + 1} failed: {e}")
-                if attempt == max_retries - 1:
-                    raise
-                time.sleep(2 ** attempt)  # Exponential backoff
-                
+    @handle_file_operations
     def _save_data(self, data: Union[pd.DataFrame, Dict], filename: str) -> Path:
         """Save data to file with automatic format detection."""
         filepath = self.data_dir / filename
@@ -69,13 +76,13 @@ class BaseCollector(ABC):
         logger.info(f"Data saved to {filepath}")
         return filepath
     
+    @handle_data_processing_errors
     def _validate_coordinates(self, df: pd.DataFrame, 
                              lat_col: str = 'latitude', 
                              lon_col: str = 'longitude') -> pd.DataFrame:
         """Validate and clean coordinate data."""
         if lat_col not in df.columns or lon_col not in df.columns:
-            logger.warning(f"Coordinate columns {lat_col} or {lon_col} not found")
-            return df
+            raise ValidationError(f"Coordinate columns {lat_col} or {lon_col} not found")
         
         # Convert to numeric
         df[lat_col] = pd.to_numeric(df[lat_col], errors='coerce')
@@ -85,10 +92,16 @@ class BaseCollector(ABC):
         initial_count = len(df)
         df = df.dropna(subset=[lat_col, lon_col])
         
-        # Check coordinate ranges
-        valid_lat = (df[lat_col] >= -90) & (df[lat_col] <= 90)
-        valid_lon = (df[lon_col] >= -180) & (df[lon_col] <= 180)
-        df = df[valid_lat & valid_lon]
+        # Validate each coordinate pair
+        valid_coords = []
+        for idx, row in df.iterrows():
+            try:
+                validate_coordinates(row[lat_col], row[lon_col])
+                valid_coords.append(idx)
+            except ValidationError:
+                continue
+        
+        df = df.loc[valid_coords]
         
         removed_count = initial_count - len(df)
         if removed_count > 0:

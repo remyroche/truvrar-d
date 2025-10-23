@@ -9,7 +9,7 @@ from pathlib import Path
 import geopandas as gpd
 from shapely.geometry import Point
 
-from ..data_collectors import GBIFCollector, iNaturalistCollector, SoilGridsCollector, WorldClimCollector
+from ..data_collectors.unified_collector import UnifiedDataCollector
 from .feature_engineering import FeatureEngineer
 from .data_merger import DataMerger
 
@@ -23,11 +23,8 @@ class HabitatProcessor:
         self.config = config
         self.data_dir = data_dir
         
-        # Initialize collectors
-        self.gbif_collector = GBIFCollector(config, data_dir)
-        self.inaturalist_collector = iNaturalistCollector(config, data_dir)
-        self.soilgrids_collector = SoilGridsCollector(config, data_dir)
-        self.worldclim_collector = WorldClimCollector(config, data_dir)
+        # Initialize unified collector
+        self.unified_collector = UnifiedDataCollector(config, data_dir)
         
         # Initialize processors
         self.feature_engineer = FeatureEngineer()
@@ -85,29 +82,41 @@ class HabitatProcessor:
         
         # Collect from GBIF
         try:
-            gbif_data = self.gbif_collector.collect(
+            gbif_data = self.unified_collector.collect(
+                source='gbif',
                 species=species,
                 limit=10000,
                 year_from=year_from,
                 year_to=year_to
             )
-            if not gbif_data.empty:
-                all_occurrences.append(gbif_data)
-                logger.info(f"Collected {len(gbif_data)} records from GBIF")
+            if isinstance(gbif_data, dict) and 'records_df' in gbif_data:
+                gbif_df = gbif_data['records_df']
+            else:
+                gbif_df = gbif_data
+                
+            if not gbif_df.empty:
+                all_occurrences.append(gbif_df)
+                logger.info(f"Collected {len(gbif_df)} records from GBIF")
         except Exception as e:
             logger.error(f"Error collecting GBIF data: {e}")
             
         # Collect from iNaturalist
         try:
-            inat_data = self.inaturalist_collector.collect(
+            inat_data = self.unified_collector.collect(
+                source='inaturalist',
                 species=species,
                 limit=10000,
                 year_from=year_from,
                 year_to=year_to
             )
-            if not inat_data.empty:
-                all_occurrences.append(inat_data)
-                logger.info(f"Collected {len(inat_data)} records from iNaturalist")
+            if isinstance(inat_data, dict) and 'records_df' in inat_data:
+                inat_df = inat_data['records_df']
+            else:
+                inat_df = inat_data
+                
+            if not inat_df.empty:
+                all_occurrences.append(inat_df)
+                logger.info(f"Collected {len(inat_df)} records from iNaturalist")
         except Exception as e:
             logger.error(f"Error collecting iNaturalist data: {e}")
             
@@ -125,9 +134,16 @@ class HabitatProcessor:
     def _collect_soil_data(self, coordinates: List[Tuple[float, float]]) -> pd.DataFrame:
         """Collect soil data for given coordinates."""
         try:
-            soil_data = self.soilgrids_collector.collect(coordinates)
-            logger.info(f"Collected soil data for {len(soil_data)} points")
-            return soil_data
+            soil_data = self.unified_collector.collect(
+                source='soilgrids',
+                coordinates=coordinates
+            )
+            if isinstance(soil_data, dict) and 'records_df' in soil_data:
+                soil_df = soil_data['records_df']
+            else:
+                soil_df = soil_data
+            logger.info(f"Collected soil data for {len(soil_df)} points")
+            return soil_df
         except Exception as e:
             logger.error(f"Error collecting soil data: {e}")
             return pd.DataFrame()
@@ -135,9 +151,16 @@ class HabitatProcessor:
     def _collect_climate_data(self, coordinates: List[Tuple[float, float]]) -> pd.DataFrame:
         """Collect climate data for given coordinates."""
         try:
-            climate_data = self.worldclim_collector.collect(coordinates)
-            logger.info(f"Collected climate data for {len(climate_data)} points")
-            return climate_data
+            climate_data = self.unified_collector.collect(
+                source='worldclim',
+                coordinates=coordinates
+            )
+            if isinstance(climate_data, dict) and 'records_df' in climate_data:
+                climate_df = climate_data['records_df']
+            else:
+                climate_df = climate_data
+            logger.info(f"Collected climate data for {len(climate_df)} points")
+            return climate_df
         except Exception as e:
             logger.error(f"Error collecting climate data: {e}")
             return pd.DataFrame()
