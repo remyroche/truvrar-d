@@ -228,3 +228,312 @@ class DataMerger:
         aggregated_data = data.groupby(group_cols).agg(agg_functions).reset_index()
         
         return aggregated_data
+    def merge_microbiome_environmental_data(self, 
+                                           microbiome_data: pd.DataFrame,
+                                           soil_data: pd.DataFrame,
+                                           climate_data: pd.DataFrame,
+                                           glim_data: pd.DataFrame,
+                                           abundance_data: pd.DataFrame = None) -> pd.DataFrame:
+        """
+        Merge microbiome data with environmental layers (soil, climate, geology).
+        
+        Args:
+            microbiome_data: Microbiome data from EBI Metagenomics
+            soil_data: Soil data from SoilGrids
+            climate_data: Climate data from WorldClim
+            glim_data: Geological data from GLiM
+            abundance_data: Processed abundance data (optional)
+            
+        Returns:
+            Merged DataFrame with microbiome-environmental data
+        """
+        if microbiome_data.empty:
+            logger.warning("No microbiome data provided")
+            return pd.DataFrame()
+            
+        logger.info("Merging microbiome data with environmental layers")
+        
+        # Start with microbiome data as base
+        merged_data = microbiome_data.copy()
+        
+        # Add soil data for samples with coordinates
+        if not soil_data.empty:
+            merged_data = self._merge_soil_data(merged_data, soil_data)
+        
+        # Add climate data for samples with coordinates
+        if not climate_data.empty:
+            merged_data = self._merge_climate_data(merged_data, climate_data)
+        
+        # Add geological data for samples with coordinates
+        if not glim_data.empty:
+            merged_data = self._merge_geological_data(merged_data, glim_data)
+        
+        # Add abundance data if provided
+        if abundance_data is not None and not abundance_data.empty:
+            merged_data = self._merge_abundance_data(merged_data, abundance_data)
+        
+        # Create derived environmental variables
+        merged_data = self._create_environmental_derivatives(merged_data)
+        
+        # Create microbiome-environmental summary
+        merged_data = self._create_microbiome_summary(merged_data)
+        
+        logger.info(f"Merged microbiome data: {len(merged_data)} records")
+        return merged_data
+    
+    def _merge_soil_data(self, microbiome_data: pd.DataFrame, soil_data: pd.DataFrame) -> pd.DataFrame:
+        """Merge soil data with microbiome data."""
+        # Find samples with coordinates
+        coords_mask = microbiome_data['latitude'].notna() & microbiome_data['longitude'].notna()
+        coords_data = microbiome_data[coords_mask].copy()
+        
+        if coords_data.empty:
+            logger.warning("No samples with coordinates for soil data merging")
+            return microbiome_data
+        
+        # Merge soil data based on coordinates
+        merged_coords = self._merge_spatial_data(coords_data, soil_data, 
+                                               lat_col='latitude', lon_col='longitude',
+                                               buffer_distance=0.01)
+        
+        # Update the original dataframe
+        microbiome_data.loc[coords_mask, merged_coords.columns] = merged_coords
+        
+        return microbiome_data
+    
+    def _merge_climate_data(self, microbiome_data: pd.DataFrame, climate_data: pd.DataFrame) -> pd.DataFrame:
+        """Merge climate data with microbiome data."""
+        # Find samples with coordinates
+        coords_mask = microbiome_data['latitude'].notna() & microbiome_data['longitude'].notna()
+        coords_data = microbiome_data[coords_mask].copy()
+        
+        if coords_data.empty:
+            logger.warning("No samples with coordinates for climate data merging")
+            return microbiome_data
+        
+        # Merge climate data based on coordinates
+        merged_coords = self._merge_spatial_data(coords_data, climate_data,
+                                               lat_col='latitude', lon_col='longitude',
+                                               buffer_distance=0.01)
+        
+        # Update the original dataframe
+        microbiome_data.loc[coords_mask, merged_coords.columns] = merged_coords
+        
+        return microbiome_data
+    
+    def _merge_geological_data(self, microbiome_data: pd.DataFrame, glim_data: pd.DataFrame) -> pd.DataFrame:
+        """Merge geological data with microbiome data."""
+        # Find samples with coordinates
+        coords_mask = microbiome_data['latitude'].notna() & microbiome_data['longitude'].notna()
+        coords_data = microbiome_data[coords_mask].copy()
+        
+        if coords_data.empty:
+            logger.warning("No samples with coordinates for geological data merging")
+            return microbiome_data
+        
+        # Merge geological data based on coordinates
+        merged_coords = self._merge_spatial_data(coords_data, glim_data,
+                                               lat_col='latitude', lon_col='longitude',
+                                               buffer_distance=0.01)
+        
+        # Update the original dataframe
+        microbiome_data.loc[coords_mask, merged_coords.columns] = merged_coords
+        
+        return microbiome_data
+    
+    def _merge_abundance_data(self, microbiome_data: pd.DataFrame, abundance_data: pd.DataFrame) -> pd.DataFrame:
+        """Merge abundance data with microbiome data."""
+        # Merge on sample_id
+        if 'sample_id' in microbiome_data.columns and 'sample_id' in abundance_data.columns:
+            merged_data = pd.merge(microbiome_data, abundance_data, on='sample_id', how='left')
+            logger.info(f"Merged abundance data: {merged_data['sample_id'].notna().sum()} samples with abundance data")
+            return merged_data
+        else:
+            logger.warning("Cannot merge abundance data - missing sample_id column")
+            return microbiome_data
+    
+    def _create_environmental_derivatives(self, merged_data: pd.DataFrame) -> pd.DataFrame:
+        """Create derived environmental variables."""
+        # Calculate soil pH from different sources
+        if 'ph' in merged_data.columns and 'soil_ph' in merged_data.columns:
+            merged_data['ph_combined'] = merged_data['ph'].fillna(merged_data['soil_ph'])
+        elif 'soil_ph' in merged_data.columns:
+            merged_data['ph_combined'] = merged_data['soil_ph']
+        elif 'ph' in merged_data.columns:
+            merged_data['ph_combined'] = merged_data['ph']
+        
+        # Calculate temperature from different sources
+        if 'temperature' in merged_data.columns and 'mean_temp' in merged_data.columns:
+            merged_data['temp_combined'] = merged_data['temperature'].fillna(merged_data['mean_temp'])
+        elif 'mean_temp' in merged_data.columns:
+            merged_data['temp_combined'] = merged_data['mean_temp']
+        elif 'temperature' in merged_data.columns:
+            merged_data['temp_combined'] = merged_data['temperature']
+        
+        # Create environmental categories
+        if 'ph_combined' in merged_data.columns:
+            merged_data['ph_category'] = pd.cut(merged_data['ph_combined'], 
+                                              bins=[0, 6.5, 7.5, 8.5, 14], 
+                                              labels=['acidic', 'neutral', 'alkaline', 'highly_alkaline'])
+        
+        if 'temp_combined' in merged_data.columns:
+            merged_data['temp_category'] = pd.cut(merged_data['temp_combined'],
+                                                bins=[-50, 5, 15, 25, 50],
+                                                labels=['cold', 'cool', 'warm', 'hot'])
+        
+        # Create soil texture categories
+        if all(col in merged_data.columns for col in ['sand', 'silt', 'clay']):
+            merged_data['soil_texture'] = self._classify_soil_texture(
+                merged_data['sand'], merged_data['silt'], merged_data['clay']
+            )
+        
+        # Create geological pH preference
+        if 'glim_rock_type_code' in merged_data.columns:
+            merged_data['geological_ph_preference'] = merged_data['glim_rock_type_code'].apply(
+                self._get_geological_ph_preference
+            )
+        
+        return merged_data
+    
+    def _classify_soil_texture(self, sand: pd.Series, silt: pd.Series, clay: pd.Series) -> pd.Series:
+        """Classify soil texture based on sand, silt, clay percentages."""
+        # USDA soil texture triangle classification
+        def classify_texture(row):
+            if pd.isna(row['sand']) or pd.isna(row['silt']) or pd.isna(row['clay']):
+                return 'unknown'
+            
+            s, si, c = row['sand'], row['silt'], row['clay']
+            
+            if c >= 40:
+                return 'clay'
+            elif si >= 40 and c < 40:
+                return 'silt'
+            elif s >= 85:
+                return 'sand'
+            elif s >= 70 and si < 30:
+                return 'loamy_sand'
+            elif s >= 50 and si < 50 and c < 27:
+                return 'sandy_loam'
+            elif s >= 23 and si >= 28 and c < 27:
+                return 'loam'
+            elif s >= 20 and si >= 50 and c < 27:
+                return 'silt_loam'
+            elif s >= 45 and c >= 27 and c < 40:
+                return 'sandy_clay_loam'
+            elif s < 45 and c >= 27 and c < 40:
+                return 'clay_loam'
+            else:
+                return 'silty_clay_loam'
+        
+        texture_data = pd.DataFrame({'sand': sand, 'silt': silt, 'clay': clay})
+        return texture_data.apply(classify_texture, axis=1)
+    
+    def _get_geological_ph_preference(self, rock_code: int) -> str:
+        """Get pH preference for geological rock type."""
+        if pd.isna(rock_code):
+            return 'unknown'
+        
+        # Based on GLiM rock type codes
+        ph_preferences = {
+            1: 'slightly_acidic',  # Igneous volcanic
+            2: 'neutral_alkaline',  # Igneous plutonic
+            3: 'slightly_acidic',  # Metamorphic
+            4: 'alkaline',  # Sedimentary carbonate
+            5: 'slightly_acidic',  # Sedimentary siliciclastic
+            6: 'neutral_alkaline',  # Sedimentary mixed
+            7: 'variable',  # Unconsolidated sediments
+            8: 'neutral_alkaline',  # Water bodies
+            9: 'slightly_acidic',  # Ice and glaciers
+            10: 'unknown'  # No data
+        }
+        return ph_preferences.get(rock_code, 'unknown')
+    
+    def _create_microbiome_summary(self, merged_data: pd.DataFrame) -> pd.DataFrame:
+        """Create microbiome-environmental summary variables."""
+        # Count bacterial families
+        if 'bacterial_families' in merged_data.columns:
+            merged_data['bacterial_family_count'] = merged_data['bacterial_families'].apply(
+                lambda x: len(json.loads(x)) if pd.notna(x) and x != '{}' else 0
+            )
+        
+        # Count fungal guilds
+        if 'fungal_guilds' in merged_data.columns:
+            merged_data['fungal_guild_count'] = merged_data['fungal_guilds'].apply(
+                lambda x: len(json.loads(x)) if pd.notna(x) and x != '{}' else 0
+            )
+        
+        # Count key taxa
+        if 'key_taxa' in merged_data.columns:
+            merged_data['key_taxa_count'] = merged_data['key_taxa'].apply(
+                lambda x: len(json.loads(x)) if pd.notna(x) and x != '[]' else 0
+            )
+        
+        # Create microbiome diversity indicators
+        if 'bacterial_family_count' in merged_data.columns:
+            merged_data['microbiome_diversity'] = pd.cut(
+                merged_data['bacterial_family_count'],
+                bins=[0, 5, 10, 20, 1000],
+                labels=['low', 'medium', 'high', 'very_high']
+            )
+        
+        # Create environmental-microbiome compatibility score
+        merged_data['env_microbiome_compatibility'] = self._calculate_compatibility_score(merged_data)
+        
+        return merged_data
+    
+    def _calculate_compatibility_score(self, data: pd.DataFrame) -> pd.Series:
+        """Calculate environmental-microbiome compatibility score."""
+        scores = []
+        
+        for _, row in data.iterrows():
+            score = 0
+            
+            # pH compatibility
+            if 'ph_combined' in row and 'geological_ph_preference' in row:
+                ph = row['ph_combined']
+                pref = row['geological_ph_preference']
+                
+                if not pd.isna(ph) and not pd.isna(pref):
+                    if pref == 'alkaline' and ph > 7.5:
+                        score += 2
+                    elif pref == 'neutral_alkaline' and 6.5 <= ph <= 8.0:
+                        score += 2
+                    elif pref == 'slightly_acidic' and 6.0 <= ph <= 7.0:
+                        score += 2
+                    elif pref == 'variable':
+                        score += 1
+            
+            # Temperature compatibility
+            if 'temp_combined' in row and 'temp_category' in row:
+                temp = row['temp_combined']
+                category = row['temp_category']
+                
+                if not pd.isna(temp) and not pd.isna(category):
+                    # Truffles generally prefer cool to warm temperatures
+                    if category in ['cool', 'warm']:
+                        score += 2
+                    elif category == 'cold':
+                        score += 1
+            
+            # Soil texture compatibility
+            if 'soil_texture' in row:
+                texture = row['soil_texture']
+                if not pd.isna(texture):
+                    # Truffles generally prefer well-drained soils
+                    if texture in ['sandy_loam', 'loam', 'silt_loam']:
+                        score += 2
+                    elif texture in ['loamy_sand', 'sandy_clay_loam']:
+                        score += 1
+            
+            # Microbiome diversity
+            if 'microbiome_diversity' in row:
+                diversity = row['microbiome_diversity']
+                if not pd.isna(diversity):
+                    if diversity in ['high', 'very_high']:
+                        score += 2
+                    elif diversity == 'medium':
+                        score += 1
+            
+            scores.append(score)
+        
+        return pd.Series(scores, index=data.index)
