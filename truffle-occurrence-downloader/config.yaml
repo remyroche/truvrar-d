@@ -1,0 +1,52 @@
+# Configuration file for Truffle Occurrence Data Downloader
+
+gbif:
+  base_url: "https://api.gbif.org/v1"
+  timeout: 30
+  max_retries: 3
+  rate_limit: 1000
+
+download:
+  batch_size: 300
+  max_records: 10000
+  coordinate_uncertainty_max: 10000
+  include_duplicates: false
+  has_coordinate: true
+  has_geospatial_issue: false
+
+output:
+  default_format: "csv"
+  include_metadata: true
+  compress_output: false
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+
+# Common truffle species for quick reference
+common_species:
+  - "Tuber melanosporum"  # Black truffle
+  - "Tuber magnatum"      # White truffle
+  - "Tuber aestivum"      # Summer truffle
+  - "Tuber borchii"       # Bianchetto truffle
+  - "Tuber brumale"       # Winter truffle
+  - "Tuber mesentericum"  # Bagnoli truffle
+  - "Tuber macrosporum"   # Smooth black truffle
+  - "Tuber indicum"       # Chinese truffle
+  - "Tuber himalayense"   # Himalayan truffle
+  - "Tuber oregonense"    # Oregon white truffle
+  - "Tuber gibbosum"      # Oregon black truffle
+  - "Tuber canaliculatum" # Pecan truffle
+
+# Common European countries for truffle research
+european_countries:
+  - "FR"  # France
+  - "IT"  # Italy
+  - "ES"  # Spain
+  - "PT"  # Portugal
+  - "HR"  # Croatia
+  - "SI"  # Slovenia
+  - "AT"  # Austria
+  - "CH"  # Switzerland
+  - "DE"  # Germany
+  - "GB"  # United Kingdom
