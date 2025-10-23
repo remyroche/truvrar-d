@@ -1,0 +1,100 @@
+{
+  "sources": {
+    "gbif": {
+      "base_url": "https://api.gbif.org/v1",
+      "timeout": 30,
+      "max_retries": 3,
+      "rate_limit_delay": 0.1
+    },
+    "inaturalist": {
+      "base_url": "https://api.inaturalist.org/v1",
+      "timeout": 30,
+      "max_retries": 3,
+      "rate_limit_delay": 0.1
+    },
+    "soilgrids": {
+      "base_url": "https://rest.isric.org/soilgrids/v2.0",
+      "timeout": 30,
+      "max_retries": 3,
+      "rate_limit_delay": 0.1
+    },
+    "worldclim": {
+      "base_url": "https://biogeo.ucdavis.edu/data/worldclim/v2.1",
+      "timeout": 60,
+      "max_retries": 3,
+      "rate_limit_delay": 0.5
+    },
+    "glim": {
+      "base_url": "https://www.geo.uni-hamburg.de/en/geologie/forschung/geodynamik/glim.html",
+      "timeout": 30,
+      "max_retries": 3,
+      "rate_limit_delay": 0.1
+    },
+    "ebi_metagenomics": {
+      "base_url": "https://www.ebi.ac.uk/metagenomics/api/latest",
+      "timeout": 30,
+      "max_retries": 3,
+      "rate_limit_delay": 0.5
+    }
+  },
+  "parameters": {
+    "gbif": {
+      "limit": 10000,
+      "has_coordinate": true,
+      "has_geospatial_issue": false
+    },
+    "inaturalist": {
+      "limit": 10000,
+      "has_geo": true,
+      "quality_grade": "research,needs_id"
+    },
+    "soilgrids": {
+      "variables": [
+        "phh2o",
+        "cac03",
+        "soc",
+        "nitrogen",
+        "phosporus",
+        "sand",
+        "silt",
+        "clay",
+        "bdod",
+        "cec",
+        "cfvo"
+      ]
+    },
+    "worldclim": {
+      "variables": [
+        "bio1",
+        "bio2",
+        "bio3",
+        "bio4",
+        "bio5",
+        "bio6",
+        "bio7",
+        "bio8",
+        "bio9",
+        "bio10",
+        "bio11",
+        "bio12",
+        "bio13",
+        "bio14",
+        "bio15",
+        "bio16",
+        "bio17",
+        "bio18",
+        "bio19"
+      ],
+      "resolution": "30s"
+    },
+    "glim": {
+      "buffer_distance": 0.01
+    },
+    "ebi_metagenomics": {
+      "search_term": "Tuber",
+      "limit": 1000,
+      "include_samples": true,
+      "include_abundance": false
+    }
+  }
+}
