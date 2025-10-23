@@ -1,0 +1,105 @@
+# Default configuration for Truffle Cultivation Knowledge Graph & Simulator
+
+# Database connections
+neo4j:
+  uri: "bolt://localhost:7687"
+  user: "neo4j"
+  password: "password"
+
+graphdb:
+  uri: "http://localhost:7200"
+  repository: "truffle-kg"
+
+# Simulation parameters
+simulation:
+  total_time: 24.0  # hours
+  dt: 0.1  # hours
+  grid_size: [100, 100, 50]  # nx, ny, nz
+  grid_spacing: 10.0  # μm
+  initial_tips: 10
+  initial_nutrient_concentration: 0.1  # mol/m³
+  control_enabled: true
+  control_interval: 1.0  # hours
+  output_interval: 1.0  # hours
+  output_dir: "output"
+  save_images: true
+  save_data: true
+
+# Control parameters
+control:
+  prediction_horizon: 20
+  control_horizon: 10
+  sampling_time: 60.0  # seconds
+  
+  # Constraints
+  constraints:
+    ph_min: 5.5
+    ph_max: 7.5
+    ph_rate_max: 0.1  # pH units per minute
+    ec_min: 0.5
+    ec_max: 3.0
+    ec_rate_max: 0.2  # mS/cm per minute
+    do_min: 5.0  # mg/L
+    do_max: 15.0  # mg/L
+    do_rate_max: 1.0  # mg/L per minute
+    temp_min: 18.0  # °C
+    temp_max: 28.0  # °C
+    temp_rate_max: 2.0  # °C per minute
+    flow_min: 0.1  # L/min
+    flow_max: 2.0  # L/min
+    flow_rate_max: 0.5  # L/min per minute
+  
+  # Weights
+  weights:
+    w_pH: 10.0
+    w_ec: 5.0
+    w_do: 8.0
+    w_temp: 3.0
+    w_flow: 2.0
+    w_pH_rate: 1.0
+    w_ec_rate: 1.0
+    w_do_rate: 1.0
+    w_temp_rate: 1.0
+    w_flow_rate: 1.0
+    w_acid_cost: 0.1
+    w_base_cost: 0.1
+    w_nutrient_cost: 0.05
+    w_oxygen_cost: 0.2
+    w_heating_cost: 0.3
+    w_cooling_cost: 0.3
+
+# Data ingestion
+ingestion:
+  # API rate limits (requests per second)
+  rate_limits:
+    openalex: 10
+    crossref: 50
+    pubmed: 3
+    unpaywall: 1
+    epo: 1
+    wipo: 1
+  
+  # Query templates
+  paper_queries:
+    - '"Tuber melanosporum" OR "Tuber aestivum" OR truffle* AND (mycorrhiz* OR ectomycorrhiz* OR Hartig) AND (hydroponic* OR soilless OR aeropon* OR "nutrient solution")'
+    - '(auxin OR cytokinin OR "root exudate" OR "carbon pulse") AND (mycorrhiza* OR truffle*)'
+    - '(Tuber OR truffle) AND (inoculation OR colonization OR mycorrhiza) AND (hydroponic OR soilless)'
+  
+  patent_queries:
+    - '(truffle OR "Tuber melanosporum" OR ectomycorrhiz*) AND (hydropon* OR soilles* OR aeropon* OR bioreactor)'
+    - '(mycorrhiza OR truffle) AND (cultivation OR growing OR farming) AND (hydroponic OR soilless)'
+
+# API server
+api:
+  host: "0.0.0.0"
+  port: 8000
+  cors_enabled: true
+  graphiql_enabled: true
+
+# Logging
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/truffle_cultivation.log"
+  max_size: "10MB"
+  backup_count: 5

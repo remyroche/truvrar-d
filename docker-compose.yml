@@ -1,0 +1,151 @@
+version: '3.8'
+
+services:
+  # Neo4j database for property graph
+  neo4j:
+    image: neo4j:4.4-community
+    container_name: truffle-neo4j
+    ports:
+      - "7474:7474"  # HTTP
+      - "7687:7687"  # Bolt
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    networks:
+      - truffle-network
+
+  # GraphDB for RDF/OWL storage
+  graphdb:
+    image: ontotext/graphdb:9.10.0
+    container_name: truffle-graphdb
+    ports:
+      - "7200:7200"
+    environment:
+      - GDB_HEAP_SIZE=2g
+      - GDB_MIN_MEM=1g
+      - GDB_MAX_MEM=2g
+    volumes:
+      - graphdb_data:/opt/graphdb/home
+      - graphdb_logs:/opt/graphdb/logs
+    networks:
+      - truffle-network
+
+  # InfluxDB for time series data
+  influxdb:
+    image: influxdb:2.0
+    container_name: truffle-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=password
+      - DOCKER_INFLUXDB_INIT_ORG=truffle-org
+      - DOCKER_INFLUXDB_INIT_BUCKET=truffle-data
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    networks:
+      - truffle-network
+
+  # MinIO for object storage
+  minio:
+    image: minio/minio:latest
+    container_name: truffle-minio
+    ports:
+      - "9000:9000"  # API
+      - "9001:9001"  # Console
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - truffle-network
+
+  # Redis for caching
+  redis:
+    image: redis:6-alpine
+    container_name: truffle-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - truffle-network
+
+  # Grafana for monitoring
+  grafana:
+    image: grafana/grafana:latest
+    container_name: truffle-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - truffle-network
+
+  # Jupyter Lab for interactive analysis
+  jupyter:
+    image: jupyter/scipy-notebook:latest
+    container_name: truffle-jupyter
+    ports:
+      - "8888:8888"
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=truffle123
+    volumes:
+      - ./notebooks:/home/jovyan/work
+      - ./data:/home/jovyan/data
+    networks:
+      - truffle-network
+
+  # Main application (optional, for production)
+  app:
+    build: .
+    container_name: truffle-app
+    ports:
+      - "8000:8000"
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=password
+      - GRAPHDB_URI=http://graphdb:7200
+      - INFLUXDB_URI=http://influxdb:8086
+      - REDIS_URI=redis://redis:6379
+    depends_on:
+      - neo4j
+      - graphdb
+      - influxdb
+      - redis
+    volumes:
+      - ./output:/app/output
+      - ./logs:/app/logs
+    networks:
+      - truffle-network
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins:
+  graphdb_data:
+  graphdb_logs:
+  influxdb_data:
+  minio_data:
+  redis_data:
+  grafana_data:
+
+networks:
+  truffle-network:
+    driver: bridge
