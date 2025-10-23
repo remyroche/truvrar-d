@@ -1,0 +1,112 @@
+{
+  "automation": {
+    "default_species": [
+      "Tuber melanosporum",
+      "Tuber magnatum", 
+      "Tuber aestivum",
+      "Tuber borchii",
+      "Tuber brumale"
+    ],
+    "default_countries": [
+      "FR", "IT", "ES", "PT", "HR", "SI", "AT", "CH"
+    ],
+    "scheduling": {
+      "daily": {
+        "hour": 2,
+        "minute": 0,
+        "enabled": true
+      },
+      "weekly": {
+        "day": "monday",
+        "hour": 3,
+        "minute": 0,
+        "enabled": false
+      },
+      "monthly": {
+        "day": 1,
+        "hour": 4,
+        "minute": 0,
+        "enabled": false
+      },
+      "custom": {
+        "interval_hours": 6,
+        "enabled": false
+      }
+    },
+    "data_quality": {
+      "monitoring_enabled": true,
+      "alert_thresholds": {
+        "min_records_per_species": 5,
+        "max_coordinate_uncertainty": 10000,
+        "min_data_completeness": 0.5,
+        "max_duplicate_rate": 0.1,
+        "min_geographic_spread": 0.1,
+        "max_outlier_rate": 0.05
+      }
+    },
+    "processing": {
+      "parallel_collection": true,
+      "max_workers": 4,
+      "chunk_size": 10,
+      "retry_attempts": 3,
+      "retry_delay": 5
+    },
+    "output": {
+      "save_raw_data": true,
+      "save_processed_data": true,
+      "generate_visualizations": true,
+      "update_models": true,
+      "export_formats": ["csv", "geojson", "parquet"]
+    }
+  },
+  "api_configs": {
+    "gbif": {
+      "base_url": "https://api.gbif.org/v1",
+      "timeout": 30,
+      "max_retries": 3,
+      "rate_limit": 1000
+    },
+    "inaturalist": {
+      "base_url": "https://api.inaturalist.org/v1",
+      "timeout": 30,
+      "max_retries": 3,
+      "rate_limit": 1000
+    },
+    "soilgrids": {
+      "base_url": "https://rest.soilgrids.org",
+      "timeout": 30,
+      "max_retries": 3,
+      "rate_limit": 100
+    },
+    "worldclim": {
+      "base_url": "https://biogeo.ucdavis.edu/data/worldclim/v2.1/base",
+      "timeout": 60,
+      "max_retries": 3,
+      "rate_limit": 10
+    }
+  },
+  "model_config": {
+    "test_size": 0.2,
+    "random_state": 42,
+    "n_estimators": 100,
+    "max_depth": 10,
+    "min_samples_split": 5,
+    "min_samples_leaf": 2,
+    "cv_folds": 5
+  },
+  "notifications": {
+    "email": {
+      "enabled": false,
+      "smtp_server": "smtp.gmail.com",
+      "smtp_port": 587,
+      "username": "",
+      "password": "",
+      "recipients": []
+    },
+    "webhook": {
+      "enabled": false,
+      "url": "",
+      "headers": {}
+    }
+  }
+}
