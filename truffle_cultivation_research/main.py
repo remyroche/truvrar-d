@@ -9,9 +9,9 @@ from pathlib import Path
 import yaml
 from typing import Dict, Any
 
-from simulation.simulator import TruffleCultivationSimulator, SimulationConfig
-from etl.data_ingestion import DataIngestionPipeline
-from api.graphql_schema import schema
+from .simulation.simulator import TruffleCultivationSimulator, SimulationConfig
+from .etl.data_ingestion import DataIngestionPipeline
+from .api.graphql_schema import schema
 
 # Configure logging
 logging.basicConfig(

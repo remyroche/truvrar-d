@@ -1,0 +1,82 @@
+# Automated Data Fetching Configuration
+# ====================================
+
+# Data sources to use
+sources:
+  - openalex
+  - crossref
+  - pubmed
+  - epo
+  - wipo
+
+# Search queries to monitor
+queries:
+  - '"Tuber melanosporum" AND mycorrhiz* AND hydroponic*'
+  - '"Tuber aestivum" AND cultivation AND controlled environment'
+  - 'truffle AND mycorrhiza AND nutrient*'
+  - 'ectomycorrhiza AND host tree AND inoculation'
+  - 'truffle AND fruiting AND environmental control'
+  - '"Tuber borchii" AND cultivation'
+  - '"Tuber indicum" AND mycorrhiza'
+  - 'truffle AND PGR AND plant growth regulator'
+  - 'ectomycorrhiza AND carbon exchange'
+  - 'truffle AND spore AND germination'
+
+# Scheduling
+fetch_interval_hours: 24  # How often to fetch data
+batch_size: 1000         # Maximum results per query
+max_retries: 3           # Retry failed requests
+
+# Quality filters
+min_confidence: 0.7      # Minimum confidence for entity extraction
+min_relevance_score: 0.5 # Minimum relevance score for papers/patents
+
+# Storage
+output_dir: "data/raw"   # Directory for raw data files
+db_path: "data/fetch_history.db"  # SQLite database for tracking
+
+# Rate limiting
+requests_per_minute: 60  # API rate limit
+delay_between_requests: 1.0  # Delay between requests (seconds)
+
+# Advanced settings
+enable_entity_extraction: true
+enable_quality_assessment: true
+enable_deduplication: true
+enable_embeddings: false  # Set to true if you want to generate embeddings
+
+# Notification settings (optional)
+notifications:
+  email:
+    enabled: false
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    username: ""
+    password: ""
+    to_addresses: []
+  
+  webhook:
+    enabled: false
+    url: ""
+    secret: ""
+
+# Data source specific settings
+openalex:
+  base_url: "https://api.openalex.org"
+  rate_limit: 100000  # requests per day
+  
+crossref:
+  base_url: "https://api.crossref.org"
+  rate_limit: 50000   # requests per day
+  
+pubmed:
+  base_url: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/"
+  rate_limit: 10000   # requests per day
+  
+epo:
+  base_url: "https://ops.epo.org/3.2"
+  rate_limit: 5000    # requests per day
+  
+wipo:
+  base_url: "https://patentscope.wipo.int/search/api/search"
+  rate_limit: 10000   # requests per day
