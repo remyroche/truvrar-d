@@ -1,0 +1,152 @@
+# Academic Research Extraction - Data Sources Configuration
+
+# Primary metadata sources (free/open)
+primary_sources:
+  openalex:
+    base_url: "https://api.openalex.org"
+    rate_limit: 10  # requests per second
+    batch_size: 200
+    enabled: true
+    
+  crossref:
+    base_url: "https://api.crossref.org"
+    rate_limit: 50
+    batch_size: 1000
+    enabled: true
+    
+  europe_pmc:
+    base_url: "https://www.ebi.ac.uk/europepmc/webservices/rest"
+    rate_limit: 3
+    batch_size: 100
+    enabled: true
+    
+  semantic_scholar:
+    base_url: "https://api.semanticscholar.org/graph/v1"
+    rate_limit: 5
+    batch_size: 100
+    enabled: true
+    
+  pubmed:
+    base_url: "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
+    rate_limit: 3
+    batch_size: 100
+    enabled: true
+    
+  arxiv:
+    base_url: "http://export.arxiv.org/api/query"
+    rate_limit: 1
+    batch_size: 1000
+    enabled: true
+    
+  doaj:
+    base_url: "https://doaj.org/api/v2"
+    rate_limit: 2
+    batch_size: 100
+    enabled: true
+
+# Optional/regional sources
+optional_sources:
+  hal:
+    base_url: "https://api.archives-ouvertes.fr/search"
+    rate_limit: 2
+    batch_size: 50
+    enabled: false
+    
+  base:
+    base_url: "https://www.base-search.net/about/download/oa_dois.php"
+    rate_limit: 1
+    batch_size: 1000
+    enabled: false
+    
+  unpaywall:
+    base_url: "https://api.unpaywall.org/v2"
+    rate_limit: 1
+    batch_size: 1
+    enabled: true
+
+# Search configuration
+search_config:
+  year_range: [1950, 2024]
+  languages: ["en", "fr", "it", "es"]
+  max_results_per_source: 10000
+  
+  # Truffle-specific search terms
+  taxa_terms:
+    - "Tuber"
+    - "Tuberaceae"
+    - "Tuber melanosporum"
+    - "Tuber magnatum"
+    - "Tuber aestivum"
+    - "Tuber borchii"
+    - "Tuber brumale"
+    - "Tuber indicum"
+    - "Tuber uncinatum"
+    - "truffle"
+    - "truffles"
+    
+  context_terms:
+    - "ectomycorrhiza"
+    - "ectomycorrhizal"
+    - "host tree"
+    - "Quercus"
+    - "Corylus"
+    - "Pinus"
+    - "soil pH"
+    - "calcareous"
+    - "limestone"
+    - "climate change"
+    - "precipitation"
+    - "temperature"
+    - "phenology"
+    - "cultivation"
+    - "orchard"
+    - "in vitro"
+    - "in vivo"
+    - "metagenomics"
+    - "rhizosphere"
+    - "fruiting"
+    - "genomics"
+    - "transcriptomics"
+
+# Data processing configuration
+processing:
+  deduplication:
+    title_similarity_threshold: 0.97
+    author_overlap_threshold: 0.6
+    simhash_threshold: 0.85
+    
+  classification:
+    taxonomy_labels:
+      - "truffle_biology_in_vitro"
+      - "truffle_biology_in_vivo"
+      - "host_tree_association"
+      - "soil_properties"
+      - "climate_effects"
+      - "cultivation_orchards"
+      - "molecular_genomics_transcriptomics"
+      - "metagenomics_microbiome"
+      - "ecology_biogeography"
+      - "methodology_review_meta"
+      - "economics_market"
+    
+    min_confidence_threshold: 0.3
+    use_fulltext: true
+    
+  entity_extraction:
+    species_patterns:
+      - r"Tuber\s+\w+"
+      - r"T\.\s+\w+"
+    
+    host_patterns:
+      - r"Quercus\s+\w+"
+      - r"Corylus\s+\w+"
+      - r"Pinus\s+\w+"
+    
+    soil_patterns:
+      - r"pH\s*[=<>]\s*[\d.]+"
+      - r"calcareous"
+      - r"limestone"
+      - r"carbonate"
+      - r"clay"
+      - r"sand"
+      - r"silt"
