@@ -10,11 +10,14 @@ import argparse
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import json
+import pandas as pd
 
 from config import *
 from src.data_processing.habitat_processor import HabitatProcessor
 from src.models.habitat_model import HabitatModel
 from src.visualization.mapping_tools import MappingTools
+from src.data_collectors.academic_collector import AcademicDataCollector
+from src.data_collectors.biodiversity_collector import BiodiversityDataCollector
 
 # Set up logging
 logging.basicConfig(**LOGGING_CONFIG)
@@ -55,9 +58,13 @@ def main():
     model = HabitatModel(config, MODELS_DIR)
     mapper = MappingTools()
     
+    # Initialize specialized collectors
+    academic_collector = AcademicDataCollector(config, DATA_DIR)
+    biodiversity_collector = BiodiversityDataCollector(config, DATA_DIR)
+    
     try:
         if args.action == 'collect':
-            collect_data(processor, args)
+            collect_data(processor, academic_collector, biodiversity_collector, args)
         elif args.action == 'analyze':
             analyze_data(processor, model, args)
         elif args.action == 'visualize':
@@ -70,11 +77,31 @@ def main():
         raise
 
 
-def collect_data(processor: HabitatProcessor, args):
+def collect_data(processor: HabitatProcessor, academic_collector: AcademicDataCollector, 
+                biodiversity_collector: BiodiversityDataCollector, args):
     """Collect truffle habitat data from all sources."""
     logger.info("Starting data collection")
     
-    # Collect data
+    # Collect biodiversity data
+    logger.info("Collecting biodiversity data...")
+    biodiversity_data = biodiversity_collector.collect_biodiversity_data(
+        source='gbif',
+        species=args.species,
+        limit=10000,
+        countries=args.countries,
+        year_from=args.year_from,
+        year_to=args.year_to
+    )
+    
+    # Collect academic data
+    logger.info("Collecting academic data...")
+    academic_data = academic_collector.collect_academic_data(
+        source='pubmed',
+        search_terms=args.species,
+        limit=1000
+    )
+    
+    # Process and merge data
     data = processor.collect_all_data(
         species=args.species,
         countries=args.countries,

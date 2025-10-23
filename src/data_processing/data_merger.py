@@ -292,9 +292,7 @@ class DataMerger:
             return microbiome_data
         
         # Merge soil data based on coordinates
-        merged_coords = self._merge_spatial_data(coords_data, soil_data, 
-                                               lat_col='latitude', lon_col='longitude',
-                                               buffer_distance=0.01)
+        merged_coords = self._merge_spatial_data(coords_data, soil_data, 'soil')
         
         # Update the original dataframe
         microbiome_data.loc[coords_mask, merged_coords.columns] = merged_coords
@@ -312,9 +310,7 @@ class DataMerger:
             return microbiome_data
         
         # Merge climate data based on coordinates
-        merged_coords = self._merge_spatial_data(coords_data, climate_data,
-                                               lat_col='latitude', lon_col='longitude',
-                                               buffer_distance=0.01)
+        merged_coords = self._merge_spatial_data(coords_data, climate_data, 'climate')
         
         # Update the original dataframe
         microbiome_data.loc[coords_mask, merged_coords.columns] = merged_coords
@@ -332,9 +328,7 @@ class DataMerger:
             return microbiome_data
         
         # Merge geological data based on coordinates
-        merged_coords = self._merge_spatial_data(coords_data, glim_data,
-                                               lat_col='latitude', lon_col='longitude',
-                                               buffer_distance=0.01)
+        merged_coords = self._merge_spatial_data(coords_data, glim_data, 'geological')
         
         # Update the original dataframe
         microbiome_data.loc[coords_mask, merged_coords.columns] = merged_coords

@@ -24,6 +24,7 @@ from rasterio.warp import transform
 from .base_collector import BaseCollector
 from .harmonization import DataHarmonizer
 from .caching import DataCache
+from ..utils.data_validation import validate_habitat_dataset, assess_data_quality
 
 logger = logging.getLogger(__name__)
 
@@ -1206,26 +1207,29 @@ class UnifiedDataCollector(BaseCollector):
         return df
     
     def validate_data(self, data: pd.DataFrame) -> bool:
-        """Validate collected data."""
+        """Validate collected data using comprehensive validation."""
         if data.empty:
             logger.warning("No data to validate")
             return False
+        
+        try:
+            # Use comprehensive validation
+            validation_results = validate_habitat_dataset(data, strict_mode=True)
             
-        # Check for required columns
-        required_columns = ['latitude', 'longitude']
-        missing_columns = [col for col in required_columns if col not in data.columns]
-        if missing_columns:
-            logger.error(f"Missing required columns: {missing_columns}")
+            if not validation_results['is_valid']:
+                logger.error(f"Data validation failed: {validation_results['errors']}")
+                return False
+            
+            # Assess data quality
+            quality_report = assess_data_quality(data)
+            logger.info(f"Data validation passed: {len(data)} records")
+            logger.info(f"Data quality score: {quality_report['overall_score']:.1f}%")
+            
+            if quality_report['recommendations']:
+                logger.warning(f"Data quality recommendations: {quality_report['recommendations']}")
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error during data validation: {e}")
             return False
-            
-        # Check coordinate ranges
-        if not ((data['latitude'] >= -90) & (data['latitude'] <= 90)).all():
-            logger.error("Invalid latitude values")
-            return False
-            
-        if not ((data['longitude'] >= -180) & (data['longitude'] <= 180)).all():
-            logger.error("Invalid longitude values")
-            return False
-            
-        logger.info(f"Data validation passed: {len(data)} records")
-        return True
